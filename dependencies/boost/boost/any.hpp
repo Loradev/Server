@@ -63,13 +63,22 @@ namespace boost
         }
 
         // Perfect forwarding of ValueType
-        template<typename ValueType>
+        /*template<typename ValueType>
         any(ValueType&& value
             , typename boost::disable_if<boost::is_same<any&, ValueType> >::type* = 0 // disable if value has type `any&`
             , typename boost::disable_if<boost::is_const<ValueType> >::type* = 0) // disable if value has type `const ValueType&&`
           : content(new holder< typename decay<ValueType>::type >(static_cast<ValueType&&>(value)))
         {
         }
+		*/
+
+		template<typename ValueType> 
+        any(ValueType&& value 
+            , typename boost::disable_if<boost::is_same<any&, ValueType> >::type* = 0 // disable if value has type `any&` 
+            , typename boost::disable_if<boost::is_const<ValueType> >::type* = 0) // disable if value has type `const ValueType&&` 
+          : content(new holder< typename remove_reference<ValueType>::type >(static_cast<ValueType&&>(value))) 
+        { 
+        } 
 #endif
 
         ~any() BOOST_NOEXCEPT

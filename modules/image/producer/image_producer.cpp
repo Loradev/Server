@@ -51,13 +51,20 @@ struct image_producer : public core::frame_producer
 	const std::wstring description_;
 	core::monitor::subject		monitor_subject_;
 	const safe_ptr<core::frame_factory> frame_factory_;	safe_ptr<core::basic_frame> frame_;
+	bool m_bPremultiply ;
 	
-	explicit image_producer(const safe_ptr<core::frame_factory>& frame_factory, const std::wstring& filename) 
+	explicit image_producer(const safe_ptr<core::frame_factory>& frame_factory, const std::wstring& filename, bool bPremultiply) 
 		: description_(filename)
 		, frame_factory_(frame_factory)
 		, frame_(core::basic_frame::empty())	
 	{
-		load(load_image(filename));
+		if (!bPremultiply)
+		{
+			bPremultiply = env::properties().get(L"configuration.image.premultiplyTGA", false);
+			// il faut encore vérifier que c'est un TGA, se serait dommage
+			m_bPremultiply = bPremultiply;
+		}
+		load(load_image(filename,bPremultiply));
 	}
 
 	explicit image_producer(const safe_ptr<core::frame_factory>& frame_factory, const void* png_data, size_t size)
@@ -65,6 +72,9 @@ struct image_producer : public core::frame_producer
 		, frame_factory_(frame_factory)
 		, frame_(core::basic_frame::empty())
 	{
+		bool bPremultiply = env::properties().get(L"configuration.image.premultiplyTGA", false);
+		// il faut encore vérifier que c'est un TGA, se serait dommage
+		m_bPremultiply = bPremultiply;
 		load(load_png_from_memory(png_data, size));
 	}
 
@@ -133,9 +143,18 @@ safe_ptr<core::frame_producer> create_raw_producer(
 
 		return make_safe<image_producer>(frame_factory, png_data.data(), png_data.size());
 	}
-
 	static const std::vector<std::wstring> extensions = list_of(L"png")(L"tga")(L"bmp")(L"jpg")(L"jpeg")(L"gif")(L"tiff")(L"tif")(L"jp2")(L"jpx")(L"j2k")(L"j2c");
-	std::wstring filename = env::media_folder() + params.at_original(0);
+	std::wstring filename ;
+	bool bPremultiply = false;
+	if (params[0] == L"[PREMULTIPLY]" )
+	{
+		if (params.size() < 2)
+			return core::frame_producer::empty();
+		bPremultiply = true;
+		filename = env::media_folder() + params[1];
+	}
+	else
+		filename = env::media_folder() + params.at_original(0);
 	
 	auto ext = std::find_if(extensions.begin(), extensions.end(), [&](const std::wstring& ex) -> bool
 		{					
@@ -145,7 +164,7 @@ safe_ptr<core::frame_producer> create_raw_producer(
 	if(ext == extensions.end())
 		return core::frame_producer::empty();
 
-	return make_safe<image_producer>(frame_factory, filename + L"." + *ext);
+	return make_safe<image_producer>(frame_factory, filename + L"." + *ext,bPremultiply);
 }
 
 safe_ptr<core::frame_producer> create_producer(

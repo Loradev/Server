@@ -93,7 +93,7 @@ struct image_scroll_producer : public core::frame_producer
 		start_offset_x_ = 0;
 		start_offset_y_ = 0;
 
-		auto bitmap = load_image(filename_);
+		auto bitmap = load_image(filename_, false);
 		FreeImage_FlipVertical(bitmap.get());
 
 		width_  = FreeImage_GetWidth(bitmap.get());

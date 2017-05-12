@@ -168,7 +168,16 @@ namespace caspar {
 				{
 					if (browser_ != nullptr)
 					{
-						browser_->GetHost()->CloseBrowser(true);
+						// STL because sometimes CasparCG seems to crash at the end of templates
+						try
+						{
+							browser_->GetHost()->CloseBrowser(true);
+						}
+						catch(...)
+						{
+							CASPAR_LOG_CURRENT_EXCEPTION();
+						}
+
 					}
 				});
 			}
